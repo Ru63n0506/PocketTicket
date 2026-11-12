@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Archivo: app/src/main/res/layout/item_gasto.xml -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardBackgroundColor="@color/blanco"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/borde_suave"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <!-- Miniatura del ticket (o ícono de recibo si no hay foto) -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivMiniatura"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_thumb"
+            android:contentDescription="@string/descripcion_miniatura"
+            android:padding="16dp"
+            android:scaleType="centerInside"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.PocketTicket.Thumb"
+            tools:src="@drawable/ic_receipt" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvConcepto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/texto_principal"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                tools:text="Súper La Esquina" />
+
+            <TextView
+                android:id="@+id/tvFecha"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/gris_texto_secundario"
+                android:textSize="12sp"
+                tools:text="12/11/2026 18:40" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvMonto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/rojo_gasto"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:text="- $245.50" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

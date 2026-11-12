@@ -1,0 +1,5 @@
+// Archivo build.gradle (raíz del proyecto) -> PocketTicket/build.gradle
+// Si tu Android Studio usa otra versión de AGP, cámbiala aquí.
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}

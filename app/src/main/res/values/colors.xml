@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Archivo: app/src/main/res/values/colors.xml -->
+<resources>
+    <color name="verde_pocket">#0F7B5A</color>
+    <color name="verde_pocket_claro">#16A085</color>
+    <color name="gris_fondo">#F5F7F6</color>
+    <color name="gris_texto_secundario">#6B7C75</color>
+    <color name="borde_suave">#E2E8E5</color>
+    <color name="texto_principal">#1B2A24</color>
+    <color name="rojo_gasto">#B3261E</color>
+    <color name="rojo_claro">#FFD5D2</color>
+    <color name="blanco">#FFFFFF</color>
+</resources>

@@ -11,29 +11,13 @@ import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 
-/**
- * Archivo: app/src/main/java/com/app/pocketticket/DatabaseHelper.java
- *
- * Acceso a SQLite "clásico" (sin Room). Tabla única: gastos.
- *
- * Esquema:
- *   id         INTEGER PRIMARY KEY AUTOINCREMENT
- *   concepto   TEXT
- *   monto      REAL
- *   fecha      TEXT
- *   imagen_uri TEXT
- *
- * Nota de precisión: se usa REAL por requisito del proyecto. En producción
- * conviene guardar centavos en un INTEGER para evitar errores de redondeo.
- */
 public class DatabaseHelper extends SQLiteOpenHelper {
 
-    /* ------------------------- Constantes de la BD ------------------------- */
-
     public static final String DB_NOMBRE = "pocketticket.db";
-    public static final int DB_VERSION = 1;
+    public static final int DB_VERSION = 2;
 
     public static final String TABLA_GASTOS = "gastos";
+    public static final String TABLA_INGRESOS = "ingresos";
 
     public static final String COL_ID = "id";
     public static final String COL_CONCEPTO = "concepto";
@@ -42,22 +26,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COL_IMAGEN_URI = "imagen_uri";
 
     private static final String CREAR_TABLA_GASTOS =
-            "CREATE TABLE " + TABLA_GASTOS + " (" +
+            "CREATE TABLE IF NOT EXISTS " + TABLA_GASTOS + " (" +
                     COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     COL_CONCEPTO + " TEXT, " +
                     COL_MONTO + " REAL, " +
                     COL_FECHA + " TEXT, " +
-                    COL_IMAGEN_URI + " TEXT" +
-                    ");";
+                    COL_IMAGEN_URI + " TEXT);";
 
-    /* ------------------------- Singleton (opcional) ----------------------- */
+    private static final String CREAR_TABLA_INGRESOS =
+            "CREATE TABLE IF NOT EXISTS " + TABLA_INGRESOS + " (" +
+                    COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    COL_MONTO + " REAL, " +
+                    COL_FECHA + " TEXT);";
 
     private static volatile DatabaseHelper instancia;
 
-    /**
-     * Evita tener varias conexiones abiertas al mismo archivo .db.
-     * Puedes instanciar `new DatabaseHelper(context)` sin problema.
-     */
     public static DatabaseHelper getInstancia(Context context) {
         if (instancia == null) {
             synchronized (DatabaseHelper.class) {
@@ -73,35 +56,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         super(context, DB_NOMBRE, null, DB_VERSION);
     }
 
-    /* ------------------------- Ciclo de vida SQLite ----------------------- */
-
     @Override
     public void onCreate(@NonNull SQLiteDatabase db) {
         db.execSQL(CREAR_TABLA_GASTOS);
-        db.execSQL("CREATE INDEX idx_gastos_fecha ON " + TABLA_GASTOS + "(" + COL_FECHA + ");");
+        db.execSQL(CREAR_TABLA_INGRESOS);
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON " +
+                TABLA_GASTOS + "(" + COL_FECHA + ");");
     }
 
     @Override
     public void onUpgrade(@NonNull SQLiteDatabase db, int oldVersion, int newVersion) {
-        // MVP: si cambia el esquema, se recrea la tabla.
-        // (En producción aquí se migrarían los datos con ALTER TABLE.)
-        db.execSQL("DROP TABLE IF EXISTS " + TABLA_GASTOS);
-        onCreate(db);
+        if (oldVersion < 2) {
+            db.execSQL(CREAR_TABLA_INGRESOS);
+        }
     }
 
-    @Override
-    public void onConfigure(@NonNull SQLiteDatabase db) {
-        super.onConfigure(db);
-        db.setForeignKeyConstraintsEnabled(true);
-    }
-
-    /* ------------------------------- CREATE ------------------------------- */
-
-    /**
-     * Inserta un gasto.
-     *
-     * @return el id autogenerado, o -1 si falló la inserción.
-     */
     public long insertarGasto(@NonNull String concepto,
                               double monto,
                               @Nullable String fecha,
@@ -126,28 +95,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    /** Sobrecarga cómoda usando el modelo Gasto. */
     public long insertarGasto(@NonNull Gasto gasto) {
         return insertarGasto(gasto.getConcepto(), gasto.getMonto(),
                 gasto.getFecha(), gasto.getImagenUri());
     }
 
-    /* -------------------------------- READ -------------------------------- */
+    public long insertarIngreso(double monto, @Nullable String fecha) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues valores = new ContentValues();
+        valores.put(COL_MONTO, monto);
+        valores.put(COL_FECHA, fecha);
 
-    /**
-     * Devuelve TODOS los gastos, del más reciente al más antiguo.
-     * Nunca devuelve null.
-     */
+        try {
+            return db.insert(TABLA_INGRESOS, null, valores);
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
     @NonNull
     public ArrayList<Gasto> obtenerTodosLosGastos() {
         return consultarGastos(null, null);
     }
 
-    /**
-     * Devuelve los últimos N gastos (para la lista de la pantalla principal).
-     *
-     * @param limite cantidad máxima de filas.
-     */
     @NonNull
     public ArrayList<Gasto> obtenerUltimosGastos(int limite) {
         if (limite <= 0) {
@@ -156,7 +126,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return consultarGastos(null, String.valueOf(limite));
     }
 
-    /** Busca un gasto por id. Devuelve null si no existe. */
     @Nullable
     public Gasto obtenerGastoPorId(long id) {
         ArrayList<Gasto> lista = consultarGastos(COL_ID + " = ?",
@@ -164,13 +133,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return lista.isEmpty() ? null : lista.get(0);
     }
 
-    /**
-     * Suma de todos los montos. Se usa para calcular el saldo disponible.
-     * Con la tabla vacía devuelve 0.0.
-     */
     public double obtenerTotalGastos() {
+        return obtenerSuma(TABLA_GASTOS);
+    }
+
+    public double obtenerTotalIngresos() {
+        return obtenerSuma(TABLA_INGRESOS);
+    }
+
+    private double obtenerSuma(String tabla) {
         SQLiteDatabase db = getReadableDatabase();
-        String sql = "SELECT IFNULL(SUM(" + COL_MONTO + "), 0) FROM " + TABLA_GASTOS;
+        String sql = "SELECT IFNULL(SUM(" + COL_MONTO + "), 0) FROM " + tabla;
 
         try (Cursor cursor = db.rawQuery(sql, null)) {
             if (cursor.moveToFirst()) {
@@ -180,7 +153,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return 0.0;
     }
 
-    /** Cantidad de gastos registrados. */
     public int contarGastos() {
         SQLiteDatabase db = getReadableDatabase();
         try (Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLA_GASTOS, null)) {
@@ -191,9 +163,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return 0;
     }
 
-    /* ------------------------------- DELETE ------------------------------- */
-
-    /** @return true si se borró al menos una fila. */
     public boolean eliminarGasto(long id) {
         SQLiteDatabase db = getWritableDatabase();
         try {
@@ -205,7 +174,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    /** @return cantidad de filas eliminadas. */
+    public boolean eliminarGasto(int id) {
+        return eliminarGasto((long) id);
+    }
+
     public int eliminarTodosLosGastos() {
         SQLiteDatabase db = getWritableDatabase();
         try {
@@ -215,15 +187,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    /* ------------------------------ Internos ------------------------------ */
+    public int eliminarTodosLosIngresos() {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            return db.delete(TABLA_INGRESOS, null, null);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 
-    /**
-     * Consulta genérica con proyección completa y orden descendente por id.
-     *
-     * @param seleccion   cláusula WHERE (puede ser null).
-     * @param limite      valor para LIMIT (puede ser null).
-     * @param argumentos  argumentos de la cláusula WHERE.
-     */
     @NonNull
     private ArrayList<Gasto> consultarGastos(@Nullable String seleccion,
                                              @Nullable String limite,
@@ -254,7 +226,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return lista;
     }
 
-    /** Convierte la fila actual del Cursor en un objeto Gasto. */
     @NonNull
     private Gasto gastoDesdeCursor(@NonNull Cursor cursor) {
         Gasto gasto = new Gasto();

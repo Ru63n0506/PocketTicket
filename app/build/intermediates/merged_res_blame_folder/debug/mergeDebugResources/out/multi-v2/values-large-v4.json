@@ -1,25 +1,8 @@
 {
     "logs": [
         {
-            "outputFile": "com.app.pocketticket.app-mergeDebugResources-30:/values-large-v4/values-large-v4.xml",
+            "outputFile": "com.app.pocketticket.app-mergeDebugResources-20:/values-large-v4/values-large-v4.xml",
             "map": [
-                {
-                    "source": "C:\\Users\\Lorena Reyes\\.gradle\\caches\\transforms-4\\e0473a10fb376d4c411ac1d84fc313c0\\transformed\\material-1.11.0\\res\\values-large-v4\\values-large-v4.xml",
-                    "from": {
-                        "startLines": "2,3,4,5",
-                        "startColumns": "4,4,4,4",
-                        "startOffsets": "55,169,285,407",
-                        "endColumns": "113,115,121,133",
-                        "endOffsets": "164,280,402,536"
-                    },
-                    "to": {
-                        "startLines": "11,12,13,14",
-                        "startColumns": "4,4,4,4",
-                        "startOffsets": "752,866,982,1104",
-                        "endColumns": "113,115,121,133",
-                        "endOffsets": "861,977,1099,1233"
-                    }
-                },
                 {
                     "source": "C:\\Users\\Lorena Reyes\\.gradle\\caches\\transforms-4\\7023c767f4abd58f829786c8bb1011f6\\transformed\\appcompat-1.6.1\\res\\values-large-v4\\values-large-v4.xml",
                     "from": {

@@ -1,21 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Archivo: app/src/main/res/values/themes.xml -->
 <resources>
-
-    <style name="Theme.PocketTicket" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/verde_pocket</item>
-        <item name="colorOnPrimary">@color/blanco</item>
-        <item name="colorSecondary">@color/verde_pocket_claro</item>
-        <item name="colorSurface">@color/blanco</item>
-        <item name="android:statusBarColor">@color/verde_pocket</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowBackground">@color/gris_fondo</item>
+    <style name="Theme.PocketTicket" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/azul</item>
+        <item name="colorPrimaryDark">@color/azul_oscuro</item>
+        <item name="colorAccent">@color/azul</item>
+        <item name="android:windowBackground">@color/blanco</item>
+        <item name="android:statusBarColor">@color/azul_oscuro</item>
     </style>
-
-    <!-- Esquinas redondeadas de las miniaturas (ShapeableImageView) -->
-    <style name="ShapeAppearance.PocketTicket.Thumb" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">14dp</item>
-    </style>
-
 </resources>

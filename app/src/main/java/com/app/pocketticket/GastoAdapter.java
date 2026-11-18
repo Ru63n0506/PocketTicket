@@ -8,6 +8,7 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -22,36 +23,32 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Archivo: app/src/main/java/com/app/pocketticket/GastoAdapter.java
- *
- * Adaptador estándar RecyclerView.Adapter para la lista de gastos.
- * Las miniaturas se cargan en segundo plano con BitmapFactory + inSampleSize
- * (sin dependencias externas tipo Glide) y se evita el problema clásico de
- * "imagen incorrecta al reciclar filas" comprobando el tag de la ImageView.
- */
 public class GastoAdapter extends RecyclerView.Adapter<GastoAdapter.GastoViewHolder> {
 
-    private static final int LADO_MINIATURA_PX = 250;
+    public interface OnGastoListener {
+        void onEliminar(@NonNull Gasto gasto);
 
-    /** Hilo de trabajo compartido por todas las filas. */
+        void onVerFoto(@NonNull Gasto gasto);
+    }
+
+    private static final int LADO_MINIATURA_PX = 250;
     private static final ExecutorService EJECUTOR = Executors.newFixedThreadPool(2);
-    /** Handler para regresar al hilo principal. */
     private static final Handler HILO_UI = new Handler(Looper.getMainLooper());
 
     private final List<Gasto> gastos = new ArrayList<>();
     private final Context contexto;
     private final NumberFormat formatoMoneda;
-    private final int paddingPlaceholderPx;
+    private final OnGastoListener listener;
+    private final int paddingMiniaturaPx;
 
-    public GastoAdapter(@NonNull Context context) {
+    public GastoAdapter(@NonNull Context context, @NonNull OnGastoListener listener) {
         this.contexto = context.getApplicationContext();
+        this.listener = listener;
         this.formatoMoneda = NumberFormat.getCurrencyInstance(new Locale("es", "MX"));
-        this.paddingPlaceholderPx = Math.round(
-                16 * contexto.getResources().getDisplayMetrics().density);
+        this.paddingMiniaturaPx = Math.round(
+                8 * contexto.getResources().getDisplayMetrics().density);
     }
 
-    /** Reemplaza el contenido de la lista (nunca recibe null). */
     public void actualizarLista(@Nullable List<Gasto> nuevaLista) {
         gastos.clear();
         if (nuevaLista != null) {
@@ -81,13 +78,30 @@ public class GastoAdapter extends RecyclerView.Adapter<GastoAdapter.GastoViewHol
 
         holder.tvMonto.setText("- " + formatoMoneda.format(gasto.getMonto()));
 
+        holder.btnEliminar.setOnClickListener(v -> listener.onEliminar(gasto));
+
+        holder.itemView.setOnClickListener(v -> {
+            if (gasto.tieneImagen()) {
+                listener.onVerFoto(gasto);
+            }
+        });
+
+        holder.ivMiniatura.setOnClickListener(v -> {
+            if (gasto.tieneImagen()) {
+                listener.onVerFoto(gasto);
+            }
+        });
+
         if (gasto.tieneImagen()) {
-            mostrarPlaceholder(holder.ivMiniatura);
+            holder.ivMiniatura.setTag(gasto.getImagenUri());
+            holder.ivMiniatura.setPadding(0, 0, 0, 0);
+            holder.ivMiniatura.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            holder.ivMiniatura.setImageResource(R.drawable.ic_receipt);
             cargarMiniatura(holder.ivMiniatura, gasto.getImagenUri());
         } else {
             holder.ivMiniatura.setTag(null);
-            holder.ivMiniatura.setPadding(paddingPlaceholderPx, paddingPlaceholderPx,
-                    paddingPlaceholderPx, paddingPlaceholderPx);
+            holder.ivMiniatura.setPadding(paddingMiniaturaPx, paddingMiniaturaPx,
+                    paddingMiniaturaPx, paddingMiniaturaPx);
             holder.ivMiniatura.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             holder.ivMiniatura.setImageResource(R.drawable.ic_receipt);
         }
@@ -98,19 +112,8 @@ public class GastoAdapter extends RecyclerView.Adapter<GastoAdapter.GastoViewHol
         return gastos.size();
     }
 
-    /* ------------------------- Carga de miniaturas ------------------------- */
-
-    private void mostrarPlaceholder(@NonNull ImageView destino) {
-        destino.setPadding(0, 0, 0, 0);
-        destino.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        destino.setImageResource(R.drawable.ic_receipt);
-    }
-
     private void cargarMiniatura(@NonNull final ImageView destino,
                                  @NonNull final String uriTexto) {
-
-        // El tag permite descartar resultados de filas ya recicladas.
-        destino.setTag(uriTexto);
 
         final Uri uri;
         try {
@@ -119,26 +122,18 @@ public class GastoAdapter extends RecyclerView.Adapter<GastoAdapter.GastoViewHol
             return;
         }
 
-        EJECUTOR.execute(new Runnable() {
-            @Override
-            public void run() {
-                final Bitmap bitmap = ImagenUtils.cargarBitmap(contexto, uri, LADO_MINIATURA_PX);
-                if (bitmap == null) {
-                    return;
-                }
-                HILO_UI.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (uriTexto.equals(destino.getTag())) {
-                            destino.setImageBitmap(bitmap);
-                        }
-                    }
-                });
+        EJECUTOR.execute(() -> {
+            final Bitmap bitmap = ImagenUtils.cargarBitmap(contexto, uri, LADO_MINIATURA_PX);
+            if (bitmap == null) {
+                return;
             }
+            HILO_UI.post(() -> {
+                if (uriTexto.equals(destino.getTag())) {
+                    destino.setImageBitmap(bitmap);
+                }
+            });
         });
     }
-
-    /* ----------------------------- ViewHolder ----------------------------- */
 
     static class GastoViewHolder extends RecyclerView.ViewHolder {
 
@@ -146,6 +141,7 @@ public class GastoAdapter extends RecyclerView.Adapter<GastoAdapter.GastoViewHol
         final TextView tvFecha;
         final TextView tvMonto;
         final ImageView ivMiniatura;
+        final Button btnEliminar;
 
         GastoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -153,6 +149,7 @@ public class GastoAdapter extends RecyclerView.Adapter<GastoAdapter.GastoViewHol
             tvFecha = itemView.findViewById(R.id.tvFecha);
             tvMonto = itemView.findViewById(R.id.tvMonto);
             ivMiniatura = itemView.findViewById(R.id.ivMiniatura);
+            btnEliminar = itemView.findViewById(R.id.btnEliminar);
         }
     }
 }

@@ -1,40 +1,17 @@
-/*
- * ============================================================================
- *  PROYECTO: PocketTicket
- *  INTEGRANTES: [Espacio para nombres]
- *               ____________________________________________________________
- *               ____________________________________________________________
- *               ____________________________________________________________
- *  MATERIA / GRUPO: _______________________________________________________
- *  --------------------------------------------------------------------------
- *  DESCRIPCIÓN GENERAL
- *  MVP de finanzas personales en UNA sola pantalla:
- *    - Muestra el saldo disponible: $5,000.00 - suma de todos los gastos.
- *    - Permite agregar un gasto manual (concepto + monto).
- *    - Permite fotografiar un ticket con la cámara del dispositivo. La foto
- *      se guarda en el almacenamiento privado de la app y se entrega a la app
- *      de cámara con FileProvider (URI content:// permanente).
- *    - Cada gasto (con su foto, si existe) se guarda en SQLite y se muestra
- *      en un RecyclerView.
- *
- *  TECNOLOGÍAS: Java, SQLiteOpenHelper, RecyclerView, Material 3 y
- *               ActivityResultLauncher + FileProvider (cámara moderna).
- * ============================================================================
- */
-
 package com.app.pocketticket;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.provider.Settings;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -52,11 +29,6 @@ import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
-
 import java.io.File;
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -65,36 +37,19 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * Pantalla principal (y única) de PocketTicket.
- */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGastoListener {
 
-    /* ------------------------------ Constantes ----------------------------- */
-
-    /** Presupuesto inicial fijo del MVP. */
     private static final double PRESUPUESTO_INICIAL = 5000.0d;
-
-    /** Máximo de filas que se consultan para la lista. */
     private static final int LIMITE_GASTOS_VISIBLES = 100;
-
-    /** Debe coincidir con android:authorities="${applicationId}.fileprovider". */
     private static final String SUFIJO_PROVEEDOR = ".fileprovider";
-
-    /** Subcarpeta donde se guardan las fotos (ver res/xml/file_paths.xml). */
     private static final String CARPETA_FOTOS = "tickets";
-
     private static final String KEY_FOTO_URI = "key_foto_uri";
     private static final String KEY_FOTO_RUTA = "key_foto_ruta";
-
-    /* -------------------------------- Vistas ------------------------------- */
 
     private TextView tvSaldo;
     private TextView tvResumen;
     private TextView tvSinGastos;
     private RecyclerView rvGastos;
-
-    /* --------------------------- Datos y adaptador ------------------------- */
 
     private DatabaseHelper db;
     private GastoAdapter adaptador;
@@ -102,20 +57,14 @@ public class MainActivity extends AppCompatActivity {
     private final NumberFormat formatoMoneda =
             NumberFormat.getCurrencyInstance(new Locale("es", "MX"));
 
-    /* ----------------------------- Cámara / foto --------------------------- */
-
     private ActivityResultLauncher<Uri> lanzadorCamara;
     private ActivityResultLauncher<String> lanzadorPermisoCamara;
 
-    /** URI content:// que se está usando en la captura en curso. */
     @Nullable
     private Uri uriFotoPendiente;
 
-    /** Archivo real detrás de la URI (para poder borrarlo si se cancela). */
     @Nullable
     private File archivoFotoPendiente;
-
-    /* ------------------------------ Ciclo de vida -------------------------- */
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -136,8 +85,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        // Si el usuario está en la app de cámara y el proceso muere, al volver
-        // se recupera la URI para no perder la foto.
         if (uriFotoPendiente != null) {
             outState.putString(KEY_FOTO_URI, uriFotoPendiente.toString());
         }
@@ -145,8 +92,6 @@ public class MainActivity extends AppCompatActivity {
             outState.putString(KEY_FOTO_RUTA, archivoFotoPendiente.getAbsolutePath());
         }
     }
-
-    /* ------------------------------- Setup UI ------------------------------ */
 
     private void enlazarVistas() {
         tvSaldo = findViewById(R.id.tvSaldo);
@@ -156,22 +101,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void configurarListaDeGastos() {
-        adaptador = new GastoAdapter(this);
+        adaptador = new GastoAdapter(this, this);
         rvGastos.setLayoutManager(new LinearLayoutManager(this));
         rvGastos.setHasFixedSize(true);
         rvGastos.setAdapter(adaptador);
     }
 
     private void configurarBotones() {
-        MaterialButton btnTomarFoto = findViewById(R.id.btnTomarFoto);
-        MaterialButton btnGastoManual = findViewById(R.id.btnGastoManual);
+        Button btnTomarFoto = findViewById(R.id.btnTomarFoto);
+        Button btnGastoManual = findViewById(R.id.btnGastoManual);
+        Button btnAgregarSaldo = findViewById(R.id.btnAgregarSaldo);
 
         btnTomarFoto.setOnClickListener(v -> solicitarCamara());
         btnGastoManual.setOnClickListener(v -> mostrarDialogoGasto(null));
+        btnAgregarSaldo.setOnClickListener(v -> mostrarDialogoSaldo());
     }
 
     private void registrarLanzadores() {
-        // Contrato oficial para ACTION_IMAGE_CAPTURE con EXTRA_OUTPUT.
         lanzadorCamara = registerForActivityResult(
                 new ActivityResultContracts.TakePicture(),
                 guardada -> {
@@ -194,18 +140,13 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    /* -------------------------------- Saldo -------------------------------- */
-
-    /**
-     * Recarga la lista y recalcula el saldo desde SQLite.
-     * saldo = 5000 - SUM(monto)
-     */
     private void cargarDatos() {
         ArrayList<Gasto> gastos = db.obtenerUltimosGastos(LIMITE_GASTOS_VISIBLES);
         adaptador.actualizarLista(gastos);
 
         double totalGastado = db.obtenerTotalGastos();
-        double saldo = PRESUPUESTO_INICIAL - totalGastado;
+        double totalAgregado = db.obtenerTotalIngresos();
+        double saldo = PRESUPUESTO_INICIAL + totalAgregado - totalGastado;
 
         tvSaldo.setText(formatoMoneda.format(saldo));
         tvSaldo.setTextColor(ContextCompat.getColor(this,
@@ -213,24 +154,15 @@ public class MainActivity extends AppCompatActivity {
 
         int cantidad = db.contarGastos();
         tvResumen.setText(getString(R.string.saldo_resumen, cantidad,
-                formatoMoneda.format(totalGastado)));
+                formatoMoneda.format(totalGastado),
+                formatoMoneda.format(totalAgregado)));
 
         boolean sinGastos = gastos.isEmpty();
         tvSinGastos.setVisibility(sinGastos ? View.VISIBLE : View.GONE);
         rvGastos.setVisibility(sinGastos ? View.GONE : View.VISIBLE);
     }
 
-    /* ------------------------------- Cámara -------------------------------- */
-
-    /** Punto de entrada del botón "Tomar foto ticket". */
     private void solicitarCamara() {
-        if (!hayAppDeCamara()) {
-            mostrarToast(R.string.sin_camara);
-            return;
-        }
-
-        // Si la app declara android.permission.CAMERA, debe tenerla concedida
-        // para poder lanzar ACTION_IMAGE_CAPTURE (SecurityException si no).
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
             abrirCamara();
@@ -240,32 +172,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void abrirCamara() {
+        final File archivo;
+        final Uri uri;
+
         try {
-            archivoFotoPendiente = crearArchivoDeFoto();
-            if (archivoFotoPendiente == null) {
+            archivo = crearArchivoDeFoto();
+            if (archivo == null) {
                 mostrarToast(R.string.error_crear_foto);
                 return;
             }
 
-            uriFotoPendiente = FileProvider.getUriForFile(
+            uri = FileProvider.getUriForFile(
                     this,
                     getPackageName() + SUFIJO_PROVEEDOR,
-                    archivoFotoPendiente);
-
-            lanzadorCamara.launch(uriFotoPendiente);
-
+                    archivo);
         } catch (IOException | IllegalArgumentException e) {
             borrarFotoPendiente();
             mostrarToast(R.string.error_crear_foto);
+            return;
+        }
+
+        archivoFotoPendiente = archivo;
+        uriFotoPendiente = uri;
+
+        try {
+            lanzadorCamara.launch(uri);
+        } catch (ActivityNotFoundException e) {
+            borrarFotoPendiente();
+            mostrarToast(R.string.sin_camara);
         }
     }
 
-    /**
-     * Crea el archivo destino de la foto.
-     * Preferencia: getExternalFilesDir(Pictures)/tickets
-     * Respaldo:    files/tickets
-     * Ambas rutas están declaradas en res/xml/file_paths.xml.
-     */
     @Nullable
     private File crearArchivoDeFoto() throws IOException {
         String marcaTiempo = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
@@ -285,10 +222,6 @@ public class MainActivity extends AppCompatActivity {
         return new File(carpeta, nombreArchivo);
     }
 
-    /**
-     * Algunos fabricantes devuelven resultCode != RESULT_OK aunque la foto sí
-     * se guardó, así que se valida el archivo real en disco.
-     */
     private boolean fotoValida() {
         return archivoFotoPendiente != null
                 && archivoFotoPendiente.exists()
@@ -296,14 +229,8 @@ public class MainActivity extends AppCompatActivity {
                 && uriFotoPendiente != null;
     }
 
-    private boolean hayAppDeCamara() {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        return intent.resolveActivity(getPackageManager()) != null;
-    }
-
     private void borrarFotoPendiente() {
         if (archivoFotoPendiente != null && archivoFotoPendiente.exists()) {
-            //noinspection ResultOfMethodCallIgnored
             archivoFotoPendiente.delete();
         }
         archivoFotoPendiente = null;
@@ -311,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void mostrarDialogoPermisoDenegado() {
-        new MaterialAlertDialogBuilder(this)
+        new AlertDialog.Builder(this)
                 .setTitle(R.string.permiso_camara_titulo)
                 .setMessage(R.string.permiso_camara_mensaje)
                 .setPositiveButton(R.string.abrir_ajustes, (d, w) -> abrirAjustesDeLaApp())
@@ -325,34 +252,70 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    /* --------------------------- Diálogo de gasto -------------------------- */
+    private void mostrarDialogoSaldo() {
+        final View vista = getLayoutInflater()
+                .inflate(R.layout.dialog_agregar_saldo, null);
 
-    /**
-     * Abre el AlertDialog para capturar concepto y monto.
-     *
-     * @param imagenUriTexto URI de la foto del ticket, o null si es gasto manual.
-     */
+        final EditText etMontoSaldo = vista.findViewById(R.id.etMontoSaldo);
+        final Button btnCancelar = vista.findViewById(R.id.btnCancelarSaldo);
+        final Button btnAgregar = vista.findViewById(R.id.btnAgregarSaldo);
+
+        final AlertDialog dialogo = new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_titulo_saldo)
+                .setView(vista)
+                .setCancelable(true)
+                .create();
+
+        btnCancelar.setOnClickListener(v -> dialogo.dismiss());
+
+        btnAgregar.setOnClickListener(v -> {
+            etMontoSaldo.setError(null);
+
+            double monto = parsearMonto(textoDe(etMontoSaldo));
+            if (!esMontoValido(monto)) {
+                etMontoSaldo.setError(getString(R.string.error_monto));
+                etMontoSaldo.requestFocus();
+                return;
+            }
+
+            long id = db.insertarIngreso(monto, fechaActual());
+            if (id == -1) {
+                mostrarToast(R.string.error_saldo);
+                return;
+            }
+
+            dialogo.dismiss();
+            cargarDatos();
+            mostrarToast(R.string.saldo_agregado);
+        });
+
+        dialogo.show();
+
+        if (dialogo.getWindow() != null) {
+            dialogo.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+        etMontoSaldo.requestFocus();
+    }
+
     private void mostrarDialogoGasto(@Nullable final String imagenUriTexto) {
 
         final View vista = getLayoutInflater()
                 .inflate(R.layout.dialog_agregar_gasto, null);
 
-        final TextInputLayout tilConcepto = vista.findViewById(R.id.tilConcepto);
-        final TextInputLayout tilMonto = vista.findViewById(R.id.tilMonto);
-        final TextInputEditText etConcepto = vista.findViewById(R.id.etConcepto);
-        final TextInputEditText etMonto = vista.findViewById(R.id.etMonto);
-        final MaterialButton btnGuardar = vista.findViewById(R.id.btnGuardar);
-        final MaterialButton btnCancelar = vista.findViewById(R.id.btnCancelar);
+        final EditText etConcepto = vista.findViewById(R.id.etConcepto);
+        final EditText etMonto = vista.findViewById(R.id.etMonto);
+        final Button btnGuardar = vista.findViewById(R.id.btnGuardar);
+        final Button btnCancelar = vista.findViewById(R.id.btnCancelar);
         final ImageView imgPreview = vista.findViewById(R.id.imgPreviewTicket);
 
         if (imagenUriTexto != null) {
             mostrarPreview(imgPreview, imagenUriTexto);
         }
 
-        // Bandera para no borrar la foto cuando el gasto SÍ se guardó.
         final boolean[] guardado = new boolean[]{false};
 
-        final AlertDialog dialogo = new MaterialAlertDialogBuilder(this)
+        final AlertDialog dialogo = new AlertDialog.Builder(this)
                 .setTitle(imagenUriTexto == null
                         ? R.string.dialog_titulo_manual
                         : R.string.dialog_titulo_ticket)
@@ -362,7 +325,6 @@ public class MainActivity extends AppCompatActivity {
 
         dialogo.setOnDismissListener(d -> {
             if (!guardado[0]) {
-                // El usuario canceló: la foto temporal ya no se usa.
                 borrarFotoPendiente();
             }
         });
@@ -370,19 +332,19 @@ public class MainActivity extends AppCompatActivity {
         btnCancelar.setOnClickListener(v -> dialogo.dismiss());
 
         btnGuardar.setOnClickListener(v -> {
-            tilConcepto.setError(null);
-            tilMonto.setError(null);
+            etConcepto.setError(null);
+            etMonto.setError(null);
 
             String concepto = textoDe(etConcepto);
             if (concepto.isEmpty()) {
-                tilConcepto.setError(getString(R.string.error_concepto));
+                etConcepto.setError(getString(R.string.error_concepto));
                 etConcepto.requestFocus();
                 return;
             }
 
             double monto = parsearMonto(textoDe(etMonto));
             if (!esMontoValido(monto)) {
-                tilMonto.setError(getString(R.string.error_monto));
+                etMonto.setError(getString(R.string.error_monto));
                 etMonto.requestFocus();
                 return;
             }
@@ -393,7 +355,6 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            // La foto ahora pertenece al gasto: se desvincula del flujo temporal.
             guardado[0] = true;
             uriFotoPendiente = null;
             archivoFotoPendiente = null;
@@ -405,7 +366,6 @@ public class MainActivity extends AppCompatActivity {
 
         dialogo.show();
 
-        // Mostrar el teclado con el primer campo enfocado.
         if (dialogo.getWindow() != null) {
             dialogo.getWindow().setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
@@ -425,16 +385,95 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /* ------------------------------ Utilidades ----------------------------- */
+    @Override
+    public void onEliminar(@NonNull Gasto gasto) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialogo_eliminar_titulo)
+                .setMessage(getString(R.string.dialogo_eliminar_mensaje, gasto.getConcepto()))
+                .setPositiveButton(R.string.eliminar, (d, w) -> eliminarGasto(gasto))
+                .setNegativeButton(R.string.boton_cancelar, null)
+                .show();
+    }
+
+    @Override
+    public void onVerFoto(@NonNull Gasto gasto) {
+        String imagenUri = gasto.getImagenUri();
+        if (imagenUri == null || imagenUri.trim().isEmpty()) {
+            mostrarToast(R.string.sin_foto);
+            return;
+        }
+
+        Bitmap bitmap = ImagenUtils.cargarBitmap(this, Uri.parse(imagenUri), 1200);
+        if (bitmap == null) {
+            mostrarToast(R.string.sin_foto);
+            return;
+        }
+
+        View vista = getLayoutInflater().inflate(R.layout.dialog_ver_foto, null);
+        ImageView ivFoto = vista.findViewById(R.id.ivFotoGrande);
+        Button btnCerrar = vista.findViewById(R.id.btnCerrarFoto);
+
+        ivFoto.setImageBitmap(bitmap);
+
+        final AlertDialog dialogo = new AlertDialog.Builder(this)
+                .setTitle(R.string.ver_ticket_titulo)
+                .setView(vista)
+                .create();
+
+        btnCerrar.setOnClickListener(v -> dialogo.dismiss());
+        dialogo.show();
+    }
+
+    private void eliminarGasto(@NonNull Gasto gasto) {
+        if (!db.eliminarGasto(gasto.getId())) {
+            mostrarToast(R.string.error_eliminar);
+            return;
+        }
+
+        borrarFotoDeGasto(gasto.getImagenUri());
+        cargarDatos();
+        mostrarToast(R.string.gasto_eliminado);
+    }
+
+    private void borrarFotoDeGasto(@Nullable String imagenUri) {
+        if (imagenUri == null || imagenUri.trim().isEmpty()) {
+            return;
+        }
+
+        String nombre;
+        try {
+            nombre = Uri.parse(imagenUri).getLastPathSegment();
+        } catch (Exception e) {
+            return;
+        }
+
+        if (nombre == null || nombre.trim().isEmpty()) {
+            return;
+        }
+
+        File externa = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File[] carpetas = new File[]{
+                externa == null ? null : new File(externa, CARPETA_FOTOS),
+                new File(getFilesDir(), CARPETA_FOTOS),
+                new File(getCacheDir(), CARPETA_FOTOS)
+        };
+
+        for (File carpeta : carpetas) {
+            if (carpeta == null) {
+                continue;
+            }
+            File archivo = new File(carpeta, nombre);
+            if (archivo.exists()) {
+                archivo.delete();
+            }
+        }
+    }
 
     @NonNull
     private static String textoDe(@NonNull EditText campo) {
         return campo.getText() == null ? "" : campo.getText().toString().trim();
     }
 
-    /**
-     * Acepta "1250.50" y "1250,50" (coma decimal). Devuelve -1 si no es válido.
-     */
     private static double parsearMonto(@Nullable String texto) {
         if (texto == null) {
             return -1d;

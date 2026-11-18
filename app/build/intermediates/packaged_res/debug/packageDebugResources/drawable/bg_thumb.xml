@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Archivo: app/src/main/res/drawable/bg_thumb.xml
-     Fondo de las miniaturas / placeholder de las fotos de ticket. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#E7F1EC" />
-    <corners android:radius="14dp" />
-</shape>

@@ -1,38 +1,30 @@
 [
     {
-        "merged": "com.app.pocketticket.app-debug-32:/drawable_bg_thumb.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/drawable/bg_thumb.xml"
+        "merged": "com.app.pocketticket.app-debug-22:/drawable_ic_receipt.xml.flat",
+        "source": "com.app.pocketticket.app-main-24:/drawable/ic_receipt.xml"
     },
     {
-        "merged": "com.app.pocketticket.app-debug-32:/xml_file_paths.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/xml/file_paths.xml"
+        "merged": "com.app.pocketticket.app-debug-22:/layout_activity_main.xml.flat",
+        "source": "com.app.pocketticket.app-main-24:/layout/activity_main.xml"
     },
     {
-        "merged": "com.app.pocketticket.app-debug-32:/drawable_bg_saldo_gradiente.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/drawable/bg_saldo_gradiente.xml"
+        "merged": "com.app.pocketticket.app-debug-22:/layout_item_gasto.xml.flat",
+        "source": "com.app.pocketticket.app-main-24:/layout/item_gasto.xml"
     },
     {
-        "merged": "com.app.pocketticket.app-debug-32:/layout_activity_main.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/layout/activity_main.xml"
+        "merged": "com.app.pocketticket.app-debug-22:/xml_file_paths.xml.flat",
+        "source": "com.app.pocketticket.app-main-24:/xml/file_paths.xml"
     },
     {
-        "merged": "com.app.pocketticket.app-debug-32:/layout_dialog_agregar_gasto.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/layout/dialog_agregar_gasto.xml"
+        "merged": "com.app.pocketticket.app-debug-22:/layout_dialog_agregar_gasto.xml.flat",
+        "source": "com.app.pocketticket.app-main-24:/layout/dialog_agregar_gasto.xml"
     },
     {
-        "merged": "com.app.pocketticket.app-debug-32:/drawable_ic_camera.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/drawable/ic_camera.xml"
+        "merged": "com.app.pocketticket.app-debug-22:/layout_dialog_agregar_saldo.xml.flat",
+        "source": "com.app.pocketticket.app-main-24:/layout/dialog_agregar_saldo.xml"
     },
     {
-        "merged": "com.app.pocketticket.app-debug-32:/drawable_ic_receipt.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/drawable/ic_receipt.xml"
-    },
-    {
-        "merged": "com.app.pocketticket.app-debug-32:/layout_item_gasto.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/layout/item_gasto.xml"
-    },
-    {
-        "merged": "com.app.pocketticket.app-debug-32:/drawable_ic_add.xml.flat",
-        "source": "com.app.pocketticket.app-main-34:/drawable/ic_add.xml"
+        "merged": "com.app.pocketticket.app-debug-22:/layout_dialog_ver_foto.xml.flat",
+        "source": "com.app.pocketticket.app-main-24:/layout/dialog_ver_foto.xml"
     }
 ]

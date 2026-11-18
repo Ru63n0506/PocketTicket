@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Archivo: app/src/main/AndroidManifest.xml -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Cámara del dispositivo -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- Almacenamiento: solo necesario hasta Android 9 (API 28).
-         En Android 10+ usamos FileProvider + almacenamiento propio de la app. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
-    <!-- La app funciona aunque el equipo no tenga cámara (required=false) -->
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -32,8 +27,6 @@
             </intent-filter>
         </activity>
 
-        <!-- FileProvider: entrega a la app de cámara una URI segura (content://)
-             para guardar la foto en alta resolución. -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

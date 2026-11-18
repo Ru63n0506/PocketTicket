@@ -1,5 +1,3 @@
-// Archivo: app/build.gradle  (módulo :app)
-// Sintaxis Groovy tradicional (NO Kotlin DSL).
 plugins {
     id 'com.android.application'
 }
@@ -36,15 +34,16 @@ android {
 }
 
 dependencies {
-    // Base para Activities / AppCompat
     implementation 'androidx.appcompat:appcompat:1.6.1'
-
-    // Material Design (botones, AlertDialog, tema Material3)
-    implementation 'com.google.android.material:material:1.11.0'
-
-    // RecyclerView para la lista de gastos
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
-
-    // Necesaria para FileProvider (androidx.core.content.FileProvider)
     implementation 'androidx.core:core:1.12.0'
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency { detalles ->
+        if (detalles.requested.group == 'org.jetbrains.kotlin'
+                && detalles.requested.name.startsWith('kotlin-stdlib')) {
+            detalles.useVersion '1.8.22'
+        }
+    }
 }

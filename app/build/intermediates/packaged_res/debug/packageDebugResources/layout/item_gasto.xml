@@ -1,40 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Archivo: app/src/main/res/layout/item_gasto.xml -->
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="@color/blanco"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/borde_suave"
-    app:strokeWidth="1dp">
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/blanco"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:padding="10dp">
 
-        <!-- Miniatura del ticket (o ícono de recibo si no hay foto) -->
-        <com.google.android.material.imageview.ShapeableImageView
+        <ImageView
             android:id="@+id/ivMiniatura"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@drawable/bg_thumb"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@color/gris_claro"
             android:contentDescription="@string/descripcion_miniatura"
-            android:padding="16dp"
+            android:padding="8dp"
             android:scaleType="centerInside"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.PocketTicket.Thumb"
-            tools:src="@drawable/ic_receipt" />
+            android:src="@drawable/ic_receipt" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -44,19 +35,17 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="@color/texto_principal"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                tools:text="Súper La Esquina" />
+                android:textColor="@color/negro"
+                android:textSize="15sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvFecha"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:textColor="@color/gris_texto_secundario"
-                android:textSize="12sp"
-                tools:text="12/11/2026 18:40" />
+                android:textColor="@color/gris_texto"
+                android:textSize="12sp" />
         </LinearLayout>
 
         <TextView
@@ -64,10 +53,28 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:textColor="@color/rojo_gasto"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            tools:text="- $245.50" />
+            android:textColor="@color/rojo"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnEliminar"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="6dp"
+            android:backgroundTint="@color/gris_claro"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:padding="0dp"
+            android:text="@string/boton_eliminar"
+            android:textColor="@color/rojo"
+            android:textSize="14sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-</com.google.android.material.card.MaterialCardView>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/gris_claro" />
+
+</LinearLayout>

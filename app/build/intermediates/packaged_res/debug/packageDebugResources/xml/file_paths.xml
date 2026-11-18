@@ -1,22 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Archivo: app/src/main/res/xml/file_paths.xml
-     Rutas que el FileProvider puede compartir con la app de cámara.
-     Deben coincidir con la carpeta que crea MainActivity. -->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- getExternalFilesDir(Environment.DIRECTORY_PICTURES)/tickets/ -->
     <external-files-path
         name="tickets_externos"
         path="Pictures/tickets/" />
-
-    <!-- Almacenamiento interno de la app: files/tickets/ -->
     <files-path
         name="tickets_internos"
         path="tickets/" />
-
-    <!-- Caché: cache/tickets/ (plan B si no hay almacenamiento externo) -->
     <cache-path
         name="tickets_cache"
         path="tickets/" />
-
 </paths>

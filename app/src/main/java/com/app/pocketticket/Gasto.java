@@ -3,28 +3,11 @@ package com.app.pocketticket;
 public class Gasto {
 
     private long id;
+    private long usuarioId;
     private String concepto;
     private double monto;
     private String fecha;
     private String imagenUri;
-
-    public Gasto() {
-    }
-
-    public Gasto(String concepto, double monto, String fecha, String imagenUri) {
-        this.concepto = concepto;
-        this.monto = monto;
-        this.fecha = fecha;
-        this.imagenUri = imagenUri;
-    }
-
-    public Gasto(long id, String concepto, double monto, String fecha, String imagenUri) {
-        this.id = id;
-        this.concepto = concepto;
-        this.monto = monto;
-        this.fecha = fecha;
-        this.imagenUri = imagenUri;
-    }
 
     public long getId() {
         return id;
@@ -32,6 +15,14 @@ public class Gasto {
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    public long getUsuarioId() {
+        return usuarioId;
+    }
+
+    public void setUsuarioId(long usuarioId) {
+        this.usuarioId = usuarioId;
     }
 
     public String getConcepto() {
@@ -68,16 +59,5 @@ public class Gasto {
 
     public boolean tieneImagen() {
         return imagenUri != null && !imagenUri.trim().isEmpty();
-    }
-
-    @Override
-    public String toString() {
-        return "Gasto{" +
-                "id=" + id +
-                ", concepto='" + concepto + '\'' +
-                ", monto=" + monto +
-                ", fecha='" + fecha + '\'' +
-                ", imagenUri='" + imagenUri + '\'' +
-                '}';
     }
 }

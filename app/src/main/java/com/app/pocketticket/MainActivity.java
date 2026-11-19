@@ -3,6 +3,7 @@ package com.app.pocketticket;
 import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -11,9 +12,12 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,20 +43,27 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGastoListener {
 
-    private static final double PRESUPUESTO_INICIAL = 5000.0d;
     private static final int LIMITE_GASTOS_VISIBLES = 100;
     private static final String SUFIJO_PROVEEDOR = ".fileprovider";
     private static final String CARPETA_FOTOS = "tickets";
+    private static final String PREFS_SESION = "sesion";
+    private static final String PREF_USUARIO_ID = "usuario_id";
     private static final String KEY_FOTO_URI = "key_foto_uri";
     private static final String KEY_FOTO_RUTA = "key_foto_ruta";
 
     private TextView tvSaldo;
     private TextView tvResumen;
     private TextView tvSinGastos;
+    private Button btnUsuarios;
     private RecyclerView rvGastos;
 
     private DatabaseHelper db;
     private GastoAdapter adaptador;
+    private SharedPreferences preferencias;
+    private long usuarioActivoId;
+
+    @Nullable
+    private Usuario usuarioActivo;
 
     private final NumberFormat formatoMoneda =
             NumberFormat.getCurrencyInstance(new Locale("es", "MX"));
@@ -72,12 +83,14 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
         setContentView(R.layout.activity_main);
 
         db = DatabaseHelper.getInstancia(this);
+        preferencias = getSharedPreferences(PREFS_SESION, MODE_PRIVATE);
 
         enlazarVistas();
         configurarListaDeGastos();
         restaurarFotoPendiente(savedInstanceState);
         registrarLanzadores();
         configurarBotones();
+        inicializarUsuarioActivo();
 
         cargarDatos();
     }
@@ -97,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
         tvSaldo = findViewById(R.id.tvSaldo);
         tvResumen = findViewById(R.id.tvResumen);
         tvSinGastos = findViewById(R.id.tvSinGastos);
+        btnUsuarios = findViewById(R.id.btnUsuarios);
         rvGastos = findViewById(R.id.rvGastos);
     }
 
@@ -112,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
         Button btnGastoManual = findViewById(R.id.btnGastoManual);
         Button btnAgregarSaldo = findViewById(R.id.btnAgregarSaldo);
 
+        btnUsuarios.setOnClickListener(v -> mostrarMenuUsuarios());
         btnTomarFoto.setOnClickListener(v -> solicitarCamara());
         btnGastoManual.setOnClickListener(v -> mostrarDialogoGasto(null));
         btnAgregarSaldo.setOnClickListener(v -> mostrarDialogoSaldo());
@@ -140,26 +155,265 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
                 });
     }
 
+    private void inicializarUsuarioActivo() {
+        ArrayList<Usuario> usuarios = db.obtenerTodosLosUsuarios();
+
+        if (usuarios.isEmpty()) {
+            long id = db.crearUsuario(getString(R.string.usuario_principal), "");
+            if (id == -1) {
+                mostrarToast(R.string.error_usuario);
+                return;
+            }
+            usuarioActivoId = id;
+        } else {
+            long guardado = preferencias.getLong(PREF_USUARIO_ID, -1L);
+            Usuario usuario = db.obtenerUsuario(guardado);
+            if (usuario == null) {
+                usuario = usuarios.get(0);
+            }
+            usuarioActivoId = usuario.getId();
+        }
+
+        preferencias.edit().putLong(PREF_USUARIO_ID, usuarioActivoId).apply();
+        usuarioActivo = db.obtenerUsuario(usuarioActivoId);
+    }
+
     private void cargarDatos() {
-        ArrayList<Gasto> gastos = db.obtenerUltimosGastos(LIMITE_GASTOS_VISIBLES);
+        usuarioActivo = db.obtenerUsuario(usuarioActivoId);
+        if (usuarioActivo == null) {
+            return;
+        }
+
+        ArrayList<Gasto> gastos = db.obtenerUltimosGastosDeUsuario(
+                usuarioActivoId, LIMITE_GASTOS_VISIBLES);
         adaptador.actualizarLista(gastos);
 
-        double totalGastado = db.obtenerTotalGastos();
-        double totalAgregado = db.obtenerTotalIngresos();
-        double saldo = PRESUPUESTO_INICIAL + totalAgregado - totalGastado;
+        double totalGastado = db.obtenerTotalGastosDeUsuario(usuarioActivoId);
+        double saldo = usuarioActivo.getSaldo() - totalGastado;
 
         tvSaldo.setText(formatoMoneda.format(saldo));
         tvSaldo.setTextColor(ContextCompat.getColor(this,
                 saldo < 0 ? R.color.rojo_claro : R.color.blanco));
 
-        int cantidad = db.contarGastos();
+        int cantidad = db.contarGastosDeUsuario(usuarioActivoId);
         tvResumen.setText(getString(R.string.saldo_resumen, cantidad,
-                formatoMoneda.format(totalGastado),
-                formatoMoneda.format(totalAgregado)));
+                formatoMoneda.format(totalGastado)));
+
+        btnUsuarios.setText(getString(R.string.usuario_boton, usuarioActivo.getNombre()));
 
         boolean sinGastos = gastos.isEmpty();
         tvSinGastos.setVisibility(sinGastos ? View.VISIBLE : View.GONE);
         rvGastos.setVisibility(sinGastos ? View.GONE : View.VISIBLE);
+    }
+
+    private void mostrarMenuUsuarios() {
+        final ArrayList<Usuario> usuarios = db.obtenerTodosLosUsuarios();
+        if (usuarios.isEmpty()) {
+            return;
+        }
+
+        final View vista = getLayoutInflater()
+                .inflate(R.layout.dialog_usuarios, null);
+
+        final Spinner spUsuarios = vista.findViewById(R.id.spUsuarios);
+        final Button btnAgregar = vista.findViewById(R.id.btnAgregarUsuario);
+        final Button btnEditar = vista.findViewById(R.id.btnEditarUsuario);
+        final Button btnEliminar = vista.findViewById(R.id.btnEliminarUsuario);
+        final Button btnCerrar = vista.findViewById(R.id.btnCerrarUsuarios);
+
+        ArrayList<String> nombres = new ArrayList<>();
+        int seleccion = 0;
+
+        for (int i = 0; i < usuarios.size(); i++) {
+            Usuario usuario = usuarios.get(i);
+            nombres.add(usuario.getNombre());
+            if (usuario.getId() == usuarioActivoId) {
+                seleccion = i;
+            }
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, nombres);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spUsuarios.setAdapter(adapter);
+        spUsuarios.setSelection(seleccion, false);
+
+        final AlertDialog dialogo = new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_titulo_usuarios)
+                .setView(vista)
+                .create();
+
+        spUsuarios.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view,
+                                       int position, long id) {
+                Usuario elegido = usuarios.get(position);
+                if (elegido.getId() == usuarioActivoId) {
+                    return;
+                }
+                cambiarUsuario(elegido.getId());
+                dialogo.dismiss();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
+        btnAgregar.setOnClickListener(v -> {
+            dialogo.dismiss();
+            mostrarDialogoUsuario(null);
+        });
+
+        btnEditar.setOnClickListener(v -> {
+            dialogo.dismiss();
+            mostrarDialogoUsuario(usuarioActivo);
+        });
+
+        btnEliminar.setOnClickListener(v -> {
+            dialogo.dismiss();
+            confirmarEliminarUsuario();
+        });
+
+        btnCerrar.setOnClickListener(v -> dialogo.dismiss());
+
+        dialogo.show();
+    }
+
+    private void cambiarUsuario(long id) {
+        Usuario usuario = db.obtenerUsuario(id);
+        if (usuario == null) {
+            mostrarToast(R.string.error_usuario);
+            return;
+        }
+
+        usuarioActivoId = id;
+        usuarioActivo = usuario;
+        preferencias.edit().putLong(PREF_USUARIO_ID, id).apply();
+        cargarDatos();
+        mostrarToast(getString(R.string.usuario_cambiado, usuario.getNombre()));
+    }
+
+    private void mostrarDialogoUsuario(@Nullable final Usuario usuario) {
+        final boolean editando = usuario != null;
+
+        final View vista = getLayoutInflater()
+                .inflate(R.layout.dialog_usuario, null);
+
+        final EditText etNombre = vista.findViewById(R.id.etNombreUsuario);
+        final EditText etCorreo = vista.findViewById(R.id.etCorreoUsuario);
+        final Button btnCancelar = vista.findViewById(R.id.btnCancelarUsuario);
+        final Button btnGuardar = vista.findViewById(R.id.btnGuardarUsuario);
+
+        if (editando) {
+            etNombre.setText(usuario.getNombre());
+            String correo = usuario.getCorreo();
+            etCorreo.setText(correo == null ? "" : correo);
+        }
+
+        final AlertDialog dialogo = new AlertDialog.Builder(this)
+                .setTitle(editando
+                        ? R.string.dialog_titulo_usuario_editar
+                        : R.string.dialog_titulo_usuario_nuevo)
+                .setView(vista)
+                .setCancelable(true)
+                .create();
+
+        btnCancelar.setOnClickListener(v -> dialogo.dismiss());
+
+        btnGuardar.setOnClickListener(v -> {
+            etNombre.setError(null);
+
+            String nombre = textoDe(etNombre);
+            if (nombre.isEmpty()) {
+                etNombre.setError(getString(R.string.error_nombre));
+                etNombre.requestFocus();
+                return;
+            }
+
+            String correo = textoDe(etCorreo);
+
+            if (editando) {
+                if (!db.actualizarUsuario(usuario.getId(), nombre, correo)) {
+                    mostrarToast(R.string.error_guardar_usuario);
+                    return;
+                }
+                usuarioActivo = db.obtenerUsuario(usuario.getId());
+                dialogo.dismiss();
+                cargarDatos();
+                mostrarToast(R.string.usuario_actualizado);
+            } else {
+                long id = db.crearUsuario(nombre, correo);
+                if (id == -1) {
+                    mostrarToast(R.string.error_guardar_usuario);
+                    return;
+                }
+                usuarioActivoId = id;
+                usuarioActivo = db.obtenerUsuario(id);
+                preferencias.edit().putLong(PREF_USUARIO_ID, id).apply();
+                dialogo.dismiss();
+                cargarDatos();
+                mostrarToast(R.string.usuario_agregado);
+            }
+        });
+
+        dialogo.show();
+
+        if (dialogo.getWindow() != null) {
+            dialogo.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+        etNombre.requestFocus();
+    }
+
+    private void confirmarEliminarUsuario() {
+        if (usuarioActivo == null) {
+            return;
+        }
+
+        if (db.contarUsuarios() <= 1) {
+            mostrarToast(R.string.error_ultimo_usuario);
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialogo_eliminar_usuario_titulo)
+                .setMessage(getString(R.string.dialogo_eliminar_usuario_mensaje,
+                        usuarioActivo.getNombre()))
+                .setPositiveButton(R.string.eliminar, (d, w) -> eliminarUsuarioActivo())
+                .setNegativeButton(R.string.boton_cancelar, null)
+                .show();
+    }
+
+    private void eliminarUsuarioActivo() {
+        final long idEliminar = usuarioActivoId;
+        ArrayList<Gasto> gastos = db.obtenerGastosDeUsuario(idEliminar);
+
+        if (!db.eliminarUsuario(idEliminar, idEliminar)) {
+            mostrarToast(R.string.error_eliminar_usuario);
+            return;
+        }
+
+        for (Gasto gasto : gastos) {
+            borrarFotoDeGasto(gasto.getImagenUri());
+        }
+
+        ArrayList<Usuario> restantes = db.obtenerTodosLosUsuarios();
+        if (restantes.isEmpty()) {
+            long idNuevo = db.crearUsuario(getString(R.string.usuario_principal), "");
+            if (idNuevo == -1) {
+                mostrarToast(R.string.error_usuario);
+                return;
+            }
+            usuarioActivoId = idNuevo;
+        } else {
+            usuarioActivoId = restantes.get(0).getId();
+        }
+
+        preferencias.edit().putLong(PREF_USUARIO_ID, usuarioActivoId).apply();
+        usuarioActivo = db.obtenerUsuario(usuarioActivoId);
+        cargarDatos();
+        mostrarToast(R.string.usuario_eliminado);
     }
 
     private void solicitarCamara() {
@@ -253,6 +507,10 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
     }
 
     private void mostrarDialogoSaldo() {
+        if (usuarioActivo == null) {
+            return;
+        }
+
         final View vista = getLayoutInflater()
                 .inflate(R.layout.dialog_agregar_saldo, null);
 
@@ -278,8 +536,7 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
                 return;
             }
 
-            long id = db.insertarIngreso(monto, fechaActual());
-            if (id == -1) {
+            if (!db.sumarSaldoUsuario(usuarioActivoId, monto)) {
                 mostrarToast(R.string.error_saldo);
                 return;
             }
@@ -299,6 +556,9 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
     }
 
     private void mostrarDialogoGasto(@Nullable final String imagenUriTexto) {
+        if (usuarioActivo == null) {
+            return;
+        }
 
         final View vista = getLayoutInflater()
                 .inflate(R.layout.dialog_agregar_gasto, null);
@@ -349,7 +609,20 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
                 return;
             }
 
-            long id = db.insertarGasto(concepto, monto, fechaActual(), imagenUriTexto);
+            // Validación: el gasto no puede ser mayor al saldo actual
+            Usuario usuario = db.obtenerUsuario(usuarioActivoId);
+            if (usuario != null) {
+                double totalGastado = db.obtenerTotalGastosDeUsuario(usuarioActivoId);
+                double saldoDisponible = usuario.getSaldo() - totalGastado;
+                if (monto > saldoDisponible) {
+                    mostrarToast("El gasto no puede ser mayor al saldo actual. Saldo disponible: " + formatoMoneda.format(saldoDisponible));
+                    etMonto.requestFocus();
+                    return;
+                }
+            }
+
+            long id = db.insertarGasto(usuarioActivoId, concepto, monto,
+                    fechaActual(), imagenUriTexto);
             if (id == -1) {
                 mostrarToast(R.string.error_guardar);
                 return;
@@ -425,7 +698,7 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
     }
 
     private void eliminarGasto(@NonNull Gasto gasto) {
-        if (!db.eliminarGasto(gasto.getId())) {
+        if (!db.eliminarGasto(usuarioActivoId, gasto.getId())) {
             mostrarToast(R.string.error_eliminar);
             return;
         }
@@ -504,6 +777,10 @@ public class MainActivity extends AppCompatActivity implements GastoAdapter.OnGa
     }
 
     private void mostrarToast(@StringRes int mensaje) {
+        Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show();
+    }
+
+    private void mostrarToast(@NonNull String mensaje) {
         Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show();
     }
 

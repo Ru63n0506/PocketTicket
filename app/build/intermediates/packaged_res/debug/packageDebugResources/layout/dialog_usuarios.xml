@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/usuarios_seleccionar"
+        android:textColor="@color/gris_texto"
+        android:textSize="12sp" />
+
+    <Spinner
+        android:id="@+id/spUsuarios"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" />
+
+    <Button
+        android:id="@+id/btnAgregarUsuario"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@color/azul"
+        android:text="@string/boton_agregar_usuario"
+        android:textColor="@color/blanco" />
+
+    <Button
+        android:id="@+id/btnEditarUsuario"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/gris_claro"
+        android:text="@string/boton_editar_usuario"
+        android:textColor="@color/negro" />
+
+    <Button
+        android:id="@+id/btnEliminarUsuario"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/gris_claro"
+        android:text="@string/boton_eliminar_usuario"
+        android:textColor="@color/rojo" />
+
+    <Button
+        android:id="@+id/btnCerrarUsuarios"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/gris_claro"
+        android:text="@string/cerrar"
+        android:textColor="@color/negro" />
+
+</LinearLayout>

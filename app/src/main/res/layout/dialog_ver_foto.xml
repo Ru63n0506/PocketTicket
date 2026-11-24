@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/ivFotoGrande"
+        android:layout_width="match_parent"
+        android:layout_height="360dp"
+        android:background="@color/gris_claro"
+        android:contentDescription="@string/descripcion_preview_ticket"
+        android:scaleType="fitCenter" />
+
+    <Button
+        android:id="@+id/btnCerrarFoto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="@color/azul"
+        android:text="@string/cerrar"
+        android:textColor="@color/blanco" />
+
+</LinearLayout>

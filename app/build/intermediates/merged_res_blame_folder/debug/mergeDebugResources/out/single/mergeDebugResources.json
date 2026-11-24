@@ -1,0 +1,94 @@
+[
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/layout_dialog_agregar_gasto.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/layout/dialog_agregar_gasto.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-xxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/layout_dialog_usuarios.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/layout/dialog_usuarios.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/layout_dialog_agregar_saldo.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/layout/dialog_agregar_saldo.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/layout_item_gasto.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/layout/item_gasto.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-xxxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-xhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-xhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/xml_file_paths.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/xml/file_paths.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/drawable_ic_receipt.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/drawable/ic_receipt.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-mdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-xxxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-hdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-mdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/layout_dialog_ver_foto.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/layout/dialog_ver_foto.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-hdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/layout_activity_main.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.app.pocketticket.app-main-28:/mipmap-xxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.app.pocketticket.app-debug-26:/layout_dialog_usuario.xml.flat",
+        "source": "com.app.pocketticket.app-main-28:/layout/dialog_usuario.xml"
+    }
+]
